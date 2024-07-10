@@ -6,87 +6,128 @@
     <title>Pengaturan</title>
     <style>
         body {
+            font-family: Arial, sans-serif;
+            background-color: #222;
+            color: #0f0;
             margin: 0;
-            padding: 0;
-            background: url('/images/default.jpg') no-repeat center center fixed;
-            background-size: cover;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
         }
         .container {
-            background: rgba(255, 255, 255, 0.8);
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            max-width: 600px;
+            margin: 0 auto;
         }
-        h2 {
-            margin: 0 0 10px;
-        }
-        label, select, input[type="file"], button {
+        label {
             display: block;
-            margin: 10px 0;
+            margin: 10px 0 5px;
         }
-        select, input[type="file"] {
-            padding: 10px;
+        input[type="text"], select {
             width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #0f0;
+            background-color: #333;
+            color: #0f0;
         }
         button {
-            padding: 10px 20px;
-            background: #333;
-            color: #fff;
+            background-color: #0f0;
+            color: #000;
             border: none;
-            border-radius: 5px;
+            padding: 10px;
             cursor: pointer;
         }
         button:hover {
-            background: #555;
+            background-color: #0b0;
+        }
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: #0f0;
+        }
+        /* Gaya untuk form error message */
+        #error-message {
+            color: red;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>Pengaturan Background</h2>
-        <form id="settings-form" method="POST" enctype="multipart/form-data">
-            <label for="background-select">Pilih Background:</label>
-            <select id="background-select" name="background" onchange="updateBackground()">
-                <option value="">Pilih Gambar</option>
-                <option value="default.jpg">Default</option>
-                <option value="image1.jpg">Image 1</option>
-                <option value="image2.jpg">Image 2</option>
-                <option value="image3.jpg">Image 3</option>
-                <option value="image4.jpg">Image 4</option>
-                <option value="image5.jpg">Image 5</option>
+        <h1>Pengaturan</h1>
+        <form id="settings-form">
+            <label for="tiktok-username">Username TikTok:</label>
+            <input type="text" id="tiktok-username" name="tiktok-username" placeholder="Masukkan username TikTok">
+            
+            <label for="background-image">Ganti Background:</label>
+            <input type="file" id="background-image" name="background-image" accept="image/*">
+            
+            <label for="default-background">Pilih Background Default:</label>
+            <select id="default-background" name="default-background">
+                <option value="">Pilih Background</option>
+                <option value="default.jpg">Default Background</option>
+                <option value="upload/background1.jpg">Upload Background 1</option>
+                <option value="upload/background2.jpg">Upload Background 2</option>
+                <!-- Tambahkan opsi untuk background yang di-upload -->
             </select>
-            <label for="background-upload">Unggah Background:</label>
-            <input type="file" id="background-upload" name="background-upload" accept="image/*" onchange="uploadImage()">
-            <button type="submit">Simpan Pengaturan</button>
+            
+            <button type="submit">Hubungkan</button>
         </form>
+        <p id="error-message"></p>
+        <a href="index.html" class="back-link">Kembali ke Halaman Utama</a>
     </div>
     <script>
-        async function updateBackground() {
-            const selectedImage = document.getElementById('background-select').value;
-            if (selectedImage) {
-                document.body.style.backgroundImage = `url('/images/${selectedImage}')`;
-            }
-        }
-
-        async function uploadImage() {
+        document.getElementById('settings-form').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const tiktokUsername = document.getElementById('tiktok-username').value;
+            const backgroundImage = document.getElementById('background-image').files[0];
+            const defaultBackground = document.getElementById('default-background').value;
             const formData = new FormData();
-            formData.append('background', document.getElementById('background-upload').files[0]);
+
+            formData.append('tiktok-username', tiktokUsername);
+
+            if (backgroundImage) {
+                formData.append('upload-background', backgroundImage);
+            }
+
+            if (defaultBackground) {
+                formData.append('default-background', defaultBackground);
+            }
+
             try {
-                const response = await fetch('/upload', {
+                const response = await fetch('/game/upload-background', {
                     method: 'POST',
                     body: formData
                 });
                 const result = await response.json();
-                document.body.style.backgroundImage = `url('${result.filePath}')`;
+                if (result.backgroundUrl) {
+                    document.querySelector('body').style.backgroundImage = `url(${result.backgroundUrl})`;
+                }
+                document.getElementById('error-message').textContent = '';
             } catch (error) {
-                console.error('Error:', error);
+                document.getElementById('error-message').textContent = 'Gagal mengunggah background.';
             }
-        }
+        });
+
+        document.getElementById('default-background').addEventListener('change', async (event) => {
+            const selectedBackground = event.target.value;
+            if (selectedBackground) {
+                try {
+                    await fetch('/game/set-background', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ backgroundUrl: `/images/${selectedBackground}` })
+                    });
+                    document.querySelector('body').style.backgroundImage = `url(/images/${selectedBackground})`;
+                } catch (error) {
+                    document.getElementById('error-message').textContent = 'Gagal mengatur background.';
+                }
+            }
+        });
     </script>
 </body>
 </html>
