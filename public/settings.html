@@ -5,13 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pengaturan</title>
     <style>
+        /* CSS untuk Halaman Pengaturan */
         body {
             font-family: Arial, sans-serif;
-            background: url('images/default.jpg') no-repeat center center fixed; /* Background halaman pengaturan */
-            background-size: cover;
-            color: #0f0; /* Teks hijau */
+            background-color: #222;
+            color: #0f0;
             margin: 0;
             padding: 20px;
+            background-image: url('images/default.jpg'); /* Background default */
+            background-size: cover;
+            background-position: center;
         }
         h1 {
             text-align: center;
@@ -42,17 +45,6 @@
         button:hover {
             background-color: #0b0;
         }
-        .back-link {
-            display: block;
-            text-align: center;
-            margin-top: 20px;
-            color: #0f0;
-        }
-        /* Gaya untuk form error message */
-        #error-message {
-            color: red;
-            font-weight: bold;
-        }
     </style>
 </head>
 <body>
@@ -68,63 +60,37 @@
             <label for="default-background">Pilih Background Default:</label>
             <select id="default-background" name="default-background">
                 <option value="">Pilih Background</option>
-                <option value="default.jpg">Default Background</option>
-                <!-- Tambahkan opsi untuk background yang di-upload -->
+                <option value="background1.jpg">Background 1</option>
+                <option value="background2.jpg">Background 2</option>
+                <!-- Tambahkan lebih banyak opsi background sesuai kebutuhan -->
             </select>
             
-            <button type="submit">Hubungkan</button>
+            <button type="submit">Simpan Pengaturan</button>
         </form>
-        <p id="error-message"></p>
-        <a href="index.html" class="back-link">Kembali ke Halaman Utama</a>
+        <p id="response-message"></p>
     </div>
     <script>
+        // Script untuk pengaturan background
         document.getElementById('settings-form').addEventListener('submit', async (event) => {
             event.preventDefault();
-            const tiktokUsername = document.getElementById('tiktok-username').value;
-            const backgroundImage = document.getElementById('background-image').files[0];
-            const defaultBackground = document.getElementById('default-background').value;
+            
             const formData = new FormData();
-
-            formData.append('tiktok-username', tiktokUsername);
-
-            if (backgroundImage) {
-                formData.append('upload-background', backgroundImage);
-            }
-
-            if (defaultBackground) {
-                formData.append('default-background', defaultBackground);
-            }
-
+            formData.append('background-image', document.getElementById('background-image').files[0]);
+            formData.append('default-background', document.getElementById('default-background').value);
+            
             try {
                 const response = await fetch('/game/upload-background', {
                     method: 'POST',
                     body: formData
                 });
-                const result = await response.json();
-                if (result.backgroundUrl) {
-                    document.querySelector('body').style.backgroundImage = `url(${result.backgroundUrl})`;
+                const data = await response.json();
+                if (data.backgroundUrl) {
+                    document.body.style.backgroundImage = `url('${data.backgroundUrl}')`;
                 }
-                document.getElementById('error-message').textContent = '';
+                document.getElementById('response-message').textContent = 'Background berhasil diubah!';
             } catch (error) {
-                document.getElementById('error-message').textContent = 'Gagal mengunggah background.';
-            }
-        });
-
-        document.getElementById('default-background').addEventListener('change', async (event) => {
-            const selectedBackground = event.target.value;
-            if (selectedBackground) {
-                try {
-                    await fetch('/game/set-background', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ backgroundUrl: `/images/${selectedBackground}` })
-                    });
-                    document.querySelector('body').style.backgroundImage = `url(/images/${selectedBackground})`;
-                } catch (error) {
-                    document.getElementById('error-message').textContent = 'Gagal mengatur background.';
-                }
+                console.error('Error uploading background:', error);
+                document.getElementById('response-message').textContent = 'Gagal mengubah background.';
             }
         });
     </script>
