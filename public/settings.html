@@ -4,55 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pengaturan</title>
-    <style>
-        /* CSS untuk Halaman Pengaturan */
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #222;
-            color: #0f0;
-            margin: 0;
-            padding: 20px;
-            background-image: url('images/default.jpg'); /* Background default */
-            background-size: cover;
-            background-position: center;
-        }
-        h1 {
-            text-align: center;
-        }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        label {
-            display: block;
-            margin: 10px 0 5px;
-        }
-        input[type="text"], select {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 20px;
-            border: 1px solid #0f0;
-            background-color: #333;
-            color: #0f0;
-        }
-        button {
-            background-color: #0f0;
-            color: #000;
-            border: none;
-            padding: 10px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #0b0;
-        }
-    </style>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
+    <div class="settings-container">
         <h1>Pengaturan</h1>
         <form id="settings-form">
             <label for="tiktok-username">Username TikTok:</label>
-            <input type="text" id="tiktok-username" name="tiktok-username" placeholder="Masukkan username TikTok">
+            <input type="text" id="tiktok-username" name="tiktok-username" placeholder="Masukkan username TikTok" required>
             
             <label for="background-image">Ganti Background:</label>
             <input type="file" id="background-image" name="background-image" accept="image/*">
@@ -65,32 +24,66 @@
                 <!-- Tambahkan lebih banyak opsi background sesuai kebutuhan -->
             </select>
             
-            <button type="submit">Simpan Pengaturan</button>
+            <button type="submit">Hubungkan</button>
         </form>
         <p id="response-message"></p>
+        <div class="navigation">
+            <a href="/">Kembali ke Halaman Utama</a>
+        </div>
     </div>
     <script>
-        // Script untuk pengaturan background
         document.getElementById('settings-form').addEventListener('submit', async (event) => {
             event.preventDefault();
             
+            const tiktokUsername = document.getElementById('tiktok-username').value;
+            const backgroundImage = document.getElementById('background-image').files[0];
+            const defaultBackground = document.getElementById('default-background').value;
             const formData = new FormData();
-            formData.append('background-image', document.getElementById('background-image').files[0]);
-            formData.append('default-background', document.getElementById('default-background').value);
-            
+
+            formData.append('tiktok-username', tiktokUsername);
+            if (backgroundImage) {
+                formData.append('upload-background', backgroundImage);
+            }
+            if (defaultBackground) {
+                formData.append('default-background', defaultBackground);
+            }
+
             try {
-                const response = await fetch('/game/upload-background', {
+                const response = await fetch('/api/connect-tiktok', {
                     method: 'POST',
                     body: formData
                 });
-                const data = await response.json();
-                if (data.backgroundUrl) {
-                    document.body.style.backgroundImage = `url('${data.backgroundUrl}')`;
+
+                const result = await response.json();
+                if (result.success) {
+                    document.getElementById('response-message').textContent = 'Berhasil terhubung dengan TikTok!';
+                    setTimeout(() => {
+                        window.location.href = '/'; // Alihkan ke halaman index setelah berhasil
+                    }, 2000);
+                } else {
+                    document.getElementById('response-message').textContent = 'Gagal menghubungkan ke TikTok.';
                 }
-                document.getElementById('response-message').textContent = 'Background berhasil diubah!';
             } catch (error) {
-                console.error('Error uploading background:', error);
-                document.getElementById('response-message').textContent = 'Gagal mengubah background.';
+                console.error('Error connecting to TikTok:', error);
+                document.getElementById('response-message').textContent = 'Gagal menghubungkan ke TikTok.';
+            }
+        });
+
+        document.getElementById('default-background').addEventListener('change', async (event) => {
+            const selectedBackground = event.target.value;
+            if (selectedBackground) {
+                try {
+                    await fetch('/api/set-background', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ backgroundUrl: `/images/${selectedBackground}` })
+                    });
+                    document.body.style.backgroundImage = `url('/images/${selectedBackground}')`;
+                } catch (error) {
+                    document.getElementById('response-message').textContent = 'Gagal mengatur background.';
+                }
             }
         });
     </script>
