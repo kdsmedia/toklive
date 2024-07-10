@@ -6,11 +6,12 @@ const WebSocket = require('ws'); // Import modul WebSocket
 const path = require('path'); // Import modul path untuk path file
 const axios = require('axios'); // Import axios untuk melakukan request API
 
-// Konfigurasi API dan WebSocket
-const tiktokApiHost = 'your-tiktok-api-host.com'; // Ganti dengan host API TikTok
-const tikfinityApiHost = 'your-tikfinity-api-host.com'; // Ganti dengan host API Tikfinity
-const tiktokApiToken = 'your-tiktok-api-token'; // Ganti dengan token API TikTok
-const tikfinityApiToken = 'your-tikfinity-api-token'; // Ganti dengan token API Tikfinity
+require('dotenv').config(); // Memuat variabel lingkungan dari .env
+
+const tiktokApiHost = process.env.TIKTOK_API_HOST;
+const tikfinityApiHost = process.env.TIKFINITY_API_HOST;
+const tiktokApiToken = process.env.TIKTOK_API_TOKEN;
+const tikfinityApiToken = process.env.TIKFINITY_API_TOKEN;
 
 const app = express(); // Inisialisasi aplikasi Express
 const server = http.createServer(app); // Membuat server HTTP
