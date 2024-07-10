@@ -37,13 +37,12 @@ async function getInteractions() {
 
         if (response.ok) {
             const data = await response.json();
-            // Format data untuk menampilkan foto profil dan nominal koin
-            const interactions = data.map(interaction => ({
+            // Ambil data interaksi dan format sesuai kebutuhan
+            return data.interactions.map(interaction => ({
                 userId: interaction.userId,
-                photoUrl: interaction.userPhotoUrl,
+                photoUrl: interaction.photoUrl,
                 coins: interaction.coins
             }));
-            return interactions;
         } else {
             return [];
         }
