@@ -3,14 +3,199 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Halaman Utama</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>TikTok Live Stream</title>
+    <style>
+        /* CSS untuk tampilan */
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background: url('images/default.jpg') no-repeat center center fixed; /* Background default */
+            background-size: cover;
+            color: #00ff00; /* Teks hijau */
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            overflow: auto; /* Mengaktifkan scroll */
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh; /* Tinggi layar penuh */
+            padding: 20px;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        a {
+            color: #00ff00;
+            font-size: 0.8em;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .settings-link {
+            margin-top: 20px;
+        }
+
+        .scrolling-space {
+            height: 200vh; /* Menambahkan ruang untuk scroll */
+        }
+
+        .bubble {
+            position: absolute;
+            border-radius: 50%;
+            border: 2px solid #ffffff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.5s ease;
+        }
+
+        .bubble img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+        }
+
+        .bubble.small {
+            width: 50px;
+            height: 50px;
+        }
+
+        .bubble.medium {
+            width: 75px;
+            height: 75px;
+        }
+
+        .bubble.large {
+            width: 100px;
+            height: 100px;
+        }
+
+        .bubble.extra-large {
+            width: 150px;
+            height: 150px;
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <h1>Selamat Datang di Halaman Utama</h1>
-        <p>Halaman ini terhubung dengan live TikTok.</p>
-        <!-- Tambahkan elemen dan fungsionalitas lainnya sesuai kebutuhan -->
+        <h1>Selamat Datang di Game TikTok Live!</h1>
+        <div class="scrolling-space"></div>
+        <a href="settings.html" class="settings-link">Pengaturan</a>
+        <div class="interaction-photos" id="interaction-photos"></div>
     </div>
+
+    <script src="api.js"></script>
+    <script>
+        // Mendapatkan URL WebSocket dari API
+        const tiktokWebSocketUrl = api.tiktokWebSocketUrl; // Mengambil URL WebSocket TikTok dari api.js
+        const tikfinityWebSocketUrl = api.tikfinityWebSocketUrl; // Mengambil URL WebSocket Tikfinity dari api.js
+
+        // Function untuk menambahkan foto profil user ke dalam bubble
+        function addUserProfileBubble(userProfileUrl, sizeClass) {
+            const interactionPhotos = document.getElementById('interaction-photos');
+            const bubble = document.createElement('div');
+            bubble.className = `bubble ${sizeClass}`;
+            const img = document.createElement('img');
+            img.src = userProfileUrl;
+            bubble.appendChild(img);
+            interactionPhotos.appendChild(bubble);
+
+            // Randomize posisi bubble
+            bubble.style.top = `${Math.random() * 100}%`;
+            bubble.style.left = `${Math.random() * 100}%`;
+
+            // Menghapus bubble setelah beberapa detik
+            setTimeout(() => {
+                bubble.style.animation = 'fadeOut 1s forwards';
+                setTimeout(() => {
+                    interactionPhotos.removeChild(bubble);
+                }, 1000);
+            }, 5000);
+        }
+
+        // Mendapatkan kelas ukuran bubble berdasarkan jumlah gift
+        function getSizeClass(coinAmount) {
+            if (coinAmount >= 1000) return 'extra-large';
+            if (coinAmount >= 500) return 'large';
+            if (coinAmount >= 100) return 'medium';
+            return 'small';
+        }
+
+        // Mendapatkan URL foto profil pengguna dari cache atau API
+        function getUserProfileFromCache(username) {
+            // Di sini Anda bisa menggunakan cache atau API untuk mendapatkan foto profil pengguna
+            return `https://example.com/profile-pic/${username}`;  // Ganti dengan URL API yang sesuai
+        }
+
+        // Menghubungkan ke WebSocket TikTok
+        function connectToTikTokWebSocket() {
+            const socket = new WebSocket(tiktokWebSocketUrl);
+
+            socket.addEventListener('open', () => {
+                console.log('Connected to TikTok WebSocket');
+            });
+
+            socket.addEventListener('message', (event) => {
+                const data = JSON.parse(event.data);
+                if (data.event === 'gift') {
+                    const sizeClass = getSizeClass(data.coinAmount);
+                    const userProfileUrl = getUserProfileFromCache(data.username);
+                    addUserProfileBubble(userProfileUrl, sizeClass);
+                }
+            });
+
+            socket.addEventListener('error', (error) => {
+                console.error('WebSocket Error:', error);
+            });
+
+            socket.addEventListener('close', () => {
+                console.log('Disconnected from TikTok WebSocket');
+            });
+        }
+
+        // Menghubungkan ke WebSocket Tikfinity
+        function connectToTikfinityWebSocket() {
+            const socket = new WebSocket(tikfinityWebSocketUrl);
+
+            socket.addEventListener('open', () => {
+                console.log('Connected to Tikfinity WebSocket');
+            });
+
+            socket.addEventListener('message', (event) => {
+                const data = JSON.parse(event.data);
+                if (data.event === 'gift') {
+                    const sizeClass = getSizeClass(data.coinAmount);
+                    const userProfileUrl = getUserProfileFromCache(data.username);
+                    addUserProfileBubble(userProfileUrl, sizeClass);
+                }
+            });
+
+            socket.addEventListener('error', (error) => {
+                console.error('WebSocket Error:', error);
+            });
+
+            socket.addEventListener('close', () => {
+                console.log('Disconnected from Tikfinity WebSocket');
+            });
+        }
+
+        connectToTikTokWebSocket();
+        connectToTikfinityWebSocket();
+    </script>
 </body>
 </html>
