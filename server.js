@@ -1,8 +1,10 @@
 // server.js
-const express = require('express');
-const http = require('http');
-const WebSocket = require('ws');
-const path = require('path');
+
+const express = require('express'); // Import express framework
+const http = require('http'); // Import modul http
+const WebSocket = require('ws'); // Import modul WebSocket
+const path = require('path'); // Import modul path untuk path file
+const axios = require('axios'); // Import axios untuk melakukan request API
 
 // Konfigurasi API dan WebSocket
 const tiktokApiHost = 'your-tiktok-api-host.com'; // Ganti dengan host API TikTok
@@ -10,19 +12,19 @@ const tikfinityApiHost = 'your-tikfinity-api-host.com'; // Ganti dengan host API
 const tiktokApiToken = 'your-tiktok-api-token'; // Ganti dengan token API TikTok
 const tikfinityApiToken = 'your-tikfinity-api-token'; // Ganti dengan token API Tikfinity
 
-const app = express();
-const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
+const app = express(); // Inisialisasi aplikasi Express
+const server = http.createServer(app); // Membuat server HTTP
+const wss = new WebSocket.Server({ server }); // Membuat WebSocket Server
 
 // Middleware untuk meng-host file statis
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'))); // Menyajikan file dari direktori 'public'
 
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    res.sendFile(path.join(__dirname, 'public', 'index.html')); // Menyajikan file 'index.html'
 });
 
 app.get('/settings', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'settings.html'));
+    res.sendFile(path.join(__dirname, 'public', 'settings.html')); // Menyajikan file 'settings.html'
 });
 
 // Handle WebSocket connections untuk TikTok dan Tikfinity
@@ -32,7 +34,7 @@ wss.on('connection', (ws) => {
     // Fungsi untuk menangani pesan yang diterima dari client
     ws.on('message', async (message) => {
         try {
-            const data = JSON.parse(message);
+            const data = JSON.parse(message); // Parse pesan JSON
 
             // Mengirim data gift dan user join ke client
             if (data.event === 'gift') {
@@ -49,7 +51,7 @@ wss.on('connection', (ws) => {
                 }));
             }
         } catch (error) {
-            console.error('Error handling WebSocket message:', error);
+            console.error('Error handling WebSocket message:', error); // Tangani error
         }
     });
 
@@ -63,53 +65,95 @@ wss.on('connection', (ws) => {
         console.error('WebSocket Error:', error);
     });
 
-    // Simulasi WebSocket untuk TikTok dan Tikfinity
-    simulateTikTokWebSocket(ws);
-    simulateTikfinityWebSocket(ws);
+    // Mensimulasikan WebSocket untuk TikTok dan Tikfinity
+    simulateTikTokWebSocket();
+    simulateTikfinityWebSocket();
 });
 
 // Fungsi untuk mensimulasikan WebSocket TikTok
-function simulateTikTokWebSocket(ws) {
-    // Simulasi data TikTok
-    setInterval(() => {
-        const randomEvent = Math.random() > 0.5 ? 'gift' : 'user_join';
-        const data = randomEvent === 'gift'
-            ? {
-                event: 'gift',
-                username: `User${Math.floor(Math.random() * 100)}`,
-                coinAmount: Math.floor(Math.random() * 2000) + 1
-            }
-            : {
-                event: 'user_join',
-                userId: `user${Math.floor(Math.random() * 1000)}`,
-                username: `User${Math.floor(Math.random() * 100)}`
-            };
-        ws.send(JSON.stringify(data));
-    }, 3000); // Kirim data setiap 3 detik
+function simulateTikTokWebSocket() {
+    // Mengambil data TikTok dari API
+    setInterval(async () => {
+        try {
+            const response = await axios.get(`${tiktokApiHost}/events`, {
+                headers: { 'Authorization': `Bearer ${tiktokApiToken}` }
+            });
+
+            // Kirim data gift atau user join ke client
+            const events = response.data; // Asumsi response.data berisi array data event
+
+            events.forEach(event => {
+                if (event.type === 'gift') {
+                    wss.clients.forEach(client => {
+                        if (client.readyState === WebSocket.OPEN) {
+                            client.send(JSON.stringify({
+                                event: 'gift',
+                                username: event.username,
+                                coinAmount: event.coinAmount
+                            }));
+                        }
+                    });
+                } else if (event.type === 'user_join') {
+                    wss.clients.forEach(client => {
+                        if (client.readyState === WebSocket.OPEN) {
+                            client.send(JSON.stringify({
+                                event: 'user_join',
+                                userId: event.userId,
+                                username: event.username
+                            }));
+                        }
+                    });
+                }
+            });
+        } catch (error) {
+            console.error('Error fetching TikTok data:', error); // Tangani error
+        }
+    }, 3000); // Ambil data setiap 3 detik
 }
 
 // Fungsi untuk mensimulasikan WebSocket Tikfinity
-function simulateTikfinityWebSocket(ws) {
-    // Simulasi data Tikfinity
-    setInterval(() => {
-        const randomEvent = Math.random() > 0.5 ? 'gift' : 'user_join';
-        const data = randomEvent === 'gift'
-            ? {
-                event: 'gift',
-                username: `User${Math.floor(Math.random() * 100)}`,
-                coinAmount: Math.floor(Math.random() * 2000) + 1
-            }
-            : {
-                event: 'user_join',
-                userId: `user${Math.floor(Math.random() * 1000)}`,
-                username: `User${Math.floor(Math.random() * 100)}`
-            };
-        ws.send(JSON.stringify(data));
-    }, 3000); // Kirim data setiap 3 detik
+function simulateTikfinityWebSocket() {
+    // Mengambil data Tikfinity dari API
+    setInterval(async () => {
+        try {
+            const response = await axios.get(`${tikfinityApiHost}/events`, {
+                headers: { 'Authorization': `Bearer ${tikfinityApiToken}` }
+            });
+
+            // Kirim data gift atau user join ke client
+            const events = response.data; // Asumsi response.data berisi array data event
+
+            events.forEach(event => {
+                if (event.type === 'gift') {
+                    wss.clients.forEach(client => {
+                        if (client.readyState === WebSocket.OPEN) {
+                            client.send(JSON.stringify({
+                                event: 'gift',
+                                username: event.username,
+                                coinAmount: event.coinAmount
+                            }));
+                        }
+                    });
+                } else if (event.type === 'user_join') {
+                    wss.clients.forEach(client => {
+                        if (client.readyState === WebSocket.OPEN) {
+                            client.send(JSON.stringify({
+                                event: 'user_join',
+                                userId: event.userId,
+                                username: event.username
+                            }));
+                        }
+                    });
+                }
+            });
+        } catch (error) {
+            console.error('Error fetching Tikfinity data:', error); // Tangani error
+        }
+    }, 3000); // Ambil data setiap 3 detik
 }
 
-// Start server
-const PORT = process.env.PORT || 3000;
+// Mulai server
+const PORT = process.env.PORT || 3000; // Ambil PORT dari variabel lingkungan atau default ke 3000
 server.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+    console.log(`Server is running on port ${PORT}`); // Log pesan saat server dimulai
 });
