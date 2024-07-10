@@ -2,6 +2,10 @@
 
 const express = require('express'); // Import express framework
 const http = require('http'); // Import modul http
+const multer = require('multer');
+const fs = require('fs');
+const app = express();
+const port = process.env.PORT || 3000;
 const WebSocket = require('ws'); // Import modul WebSocket
 const path = require('path'); // Import modul path untuk path file
 const axios = require('axios'); // Import axios untuk melakukan request API
@@ -17,7 +21,24 @@ const app = express(); // Inisialisasi aplikasi Express
 const server = http.createServer(app); // Membuat server HTTP
 const wss = new WebSocket.Server({ server }); // Membuat WebSocket Server
 
+// Konfigurasi Multer untuk upload file
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, path.join(__dirname, 'public/images/upload')); // Folder penyimpanan gambar upload
+    },
+    filename: (req, file, cb) => {
+        const ext = path.extname(file.originalname);
+        const filename = `${Date.now()}${ext}`;
+        cb(null, filename); // Nama file yang unik berdasarkan timestamp
+    }
+});
+const upload = multer({ storage });
+
 // Middleware untuk meng-host file statis
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static('public')); // Menyediakan akses ke file statis di folder public
+
 app.use(express.static(path.join(__dirname, 'public'))); // Menyajikan file dari direktori 'public'
 
 app.get('/', (req, res) => {
@@ -152,6 +173,60 @@ function simulateTikfinityWebSocket() {
         }
     }, 3000); // Ambil data setiap 3 detik
 }
+
+// Endpoint untuk menghubungkan TikTok
+app.post('/api/connect-tiktok', upload.single('upload-background'), (req, res) => {
+    const tiktokUsername = req.body['tiktok-username'];
+    const backgroundFile = req.file;
+    const defaultBackground = req.body['default-background'];
+
+    if (!tiktokUsername) {
+        return res.status(400).json({ success: false, message: 'Username TikTok tidak tersedia.' });
+    }
+
+    // Simulasikan penyimpanan data
+    console.log(`Username TikTok: ${tiktokUsername}`);
+    if (backgroundFile) {
+        console.log(`Gambar Background di-upload: ${backgroundFile.filename}`);
+    }
+    if (defaultBackground) {
+        console.log(`Background Default Dipilih: ${defaultBackground}`);
+    }
+
+    res.json({ success: true, message: 'Berhasil terhubung dengan TikTok!' });
+});
+
+// Endpoint untuk mengatur background default
+app.post('/api/set-background', (req, res) => {
+    const { backgroundUrl } = req.body;
+
+    if (backgroundUrl) {
+        // Simulasikan pengaturan background
+        console.log(`Mengatur background ke: ${backgroundUrl}`);
+        res.json({ success: true });
+    } else {
+        res.status(400).json({ success: false, message: 'URL background tidak tersedia.' });
+    }
+});
+
+// Endpoint untuk mengambil background default
+app.get('/api/backgrounds', (req, res) => {
+    const backgroundsDir = path.join(__dirname, 'public/images');
+    fs.readdir(backgroundsDir, (err, files) => {
+        if (err) {
+            return res.status(500).json({ success: false, message: 'Gagal membaca folder background.' });
+        }
+
+        const backgroundImages = files.filter(file => /\.(jpg|jpeg|png|gif)$/i.test(file));
+        res.json({ success: true, backgrounds: backgroundImages });
+    });
+});
+
+// Endpoint untuk mengunduh gambar background
+app.get('/images/:filename', (req, res) => {
+    const filePath = path.join(__dirname, 'public/images', req.params.filename);
+    res.sendFile(filePath);
+});
 
 // Mulai server
 const PORT = process.env.PORT || 3000; // Ambil PORT dari variabel lingkungan atau default ke 3000
