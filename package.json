@@ -1,14 +1,15 @@
 {
-  "name": "tiktok-live-integration",
+  "name": "tiktok-live-connector",
   "version": "1.0.0",
-  "description": "Integrasi API TikTok Live",
+  "description": "A simple app to connect to TikTok Live and manage backgrounds.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.18.2",
-    "axios": "^1.6.0",
-    "dotenv": "^16.3.1"
+    "multer": "^1.4.5-lts.1",
+    "node-fetch": "^3.3.1",
+    "dotenv": "^16.1.0"
   }
 }
