@@ -1,60 +1,80 @@
+// server.js
 const express = require('express');
+const axios = require('axios');
+const dotenv = require('dotenv');
 const path = require('path');
-const bodyParser = require('body-parser');
-const multer = require('multer');
+
+dotenv.config();
 
 const app = express();
-const port = process.env.PORT || 3000;
-
-// Middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
 
-// Setup multer untuk upload file
-const upload = multer({ dest: 'public/images/upload/' });
+const PORT = process.env.PORT || 8081;
+const API_BASE_URL = process.env.API_BASE_URL;
+const CLIENT_KEY = process.env.CLIENT_KEY;
+const CLIENT_SECRET = process.env.CLIENT_SECRET;
+const REDIRECT_URI = process.env.REDIRECT_URI;
 
-// Rute untuk mengarahkan ke halaman utama
+// Halaman Utama
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Rute untuk mengarahkan ke halaman pengaturan
+// Halaman Pengaturan
 app.get('/settings', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'settings.html'));
 });
 
-// Endpoint untuk mendapatkan background saat ini
+// Endpoint untuk mengarahkan pengguna ke halaman otorisasi TikTok
+app.get('/tiktok/auth', (req, res) => {
+    const authUrl = `https://www.tiktok.com/oauth/authorize/?client_key=${CLIENT_KEY}&response_type=code&scope=user.info.basic,video.list&redirect_uri=${REDIRECT_URI}&state=YOUR_RANDOM_STATE`;
+    res.redirect(authUrl);
+});
+
+// Callback dari TikTok setelah otorisasi
+app.get('/tiktok/callback', async (req, res) => {
+    const code = req.query.code;
+    if (!code) {
+        return res.send('Kode otorisasi tidak ditemukan.');
+    }
+
+    try {
+        const response = await axios.post('https://open-api.tiktok.com/oauth/access_token/', {
+            client_key: CLIENT_KEY,
+            client_secret: CLIENT_SECRET,
+            code: code,
+            grant_type: 'authorization_code',
+            redirect_uri: REDIRECT_URI
+        });
+        const { access_token, open_id } = response.data.data;
+        // Simpan token di tempat yang aman, misalnya dalam memori atau database
+        res.send(`Token Akses: ${access_token}<br>Open ID: ${open_id}`);
+    } catch (error) {
+        console.error('Error mendapatkan token akses:', error);
+        res.send('Gagal mendapatkan token akses.');
+    }
+});
+
+// Mengambil background dari server
 app.get('/current-background', (req, res) => {
-    res.json({ backgroundUrl: '/images/default.jpg' }); // Ubah jika menggunakan background dinamis
+    // Simpan URL background default
+    res.json({ backgroundUrl: '/images/default.jpg' });
 });
 
-// Endpoint untuk mengunggah background
-app.post('/game/upload-background', upload.single('upload-background'), (req, res) => {
-    const { 'tiktok-username': tiktokUsername, 'default-background': defaultBackground } = req.body;
-    const uploadedImage = req.file ? req.file.filename : '';
-    let backgroundUrl = '/images/default.jpg';
-
-    if (uploadedImage) {
-        backgroundUrl = `/images/upload/${uploadedImage}`;
-    } else if (defaultBackground) {
-        backgroundUrl = `/images/${defaultBackground}`;
-    }
-
-    res.json({ backgroundUrl });
+// Mengunggah background baru
+app.post('/game/upload-background', (req, res) => {
+    // Simpan background yang diunggah oleh pengguna
+    res.json({ backgroundUrl: '/images/upload/your_uploaded_image.jpg' });
 });
 
-// Endpoint untuk mengatur background
+// Mengatur background default
 app.post('/game/set-background', (req, res) => {
-    const { backgroundUrl } = req.body;
-    if (backgroundUrl) {
-        res.json({ backgroundUrl });
-    } else {
-        res.status(400).json({ error: 'Background URL tidak valid.' });
-    }
+    // Atur background default yang dipilih oleh pengguna
+    res.json({ backgroundUrl: '/images/default-background.jpg' });
 });
 
-// Mulai server
-app.listen(port, () => {
-    console.log(`Server berjalan di http://localhost:${port}`);
+app.listen(PORT, () => {
+    console.log(`Server berjalan di http://localhost:${PORT}`);
 });
