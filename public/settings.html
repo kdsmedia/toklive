@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pengaturan</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: url('/images/default.jpg') no-repeat center center fixed;
+            background-size: cover;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        h2 {
+            margin: 0 0 10px;
+        }
+        label, select, input[type="file"], button {
+            display: block;
+            margin: 10px 0;
+        }
+        select, input[type="file"] {
+            padding: 10px;
+            width: 100%;
+        }
+        button {
+            padding: 10px 20px;
+            background: #333;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Pengaturan Background</h2>
+        <form id="settings-form" method="POST" enctype="multipart/form-data">
+            <label for="background-select">Pilih Background:</label>
+            <select id="background-select" name="background" onchange="updateBackground()">
+                <option value="">Pilih Gambar</option>
+                <option value="default.jpg">Default</option>
+                <option value="image1.jpg">Image 1</option>
+                <option value="image2.jpg">Image 2</option>
+                <option value="image3.jpg">Image 3</option>
+                <option value="image4.jpg">Image 4</option>
+                <option value="image5.jpg">Image 5</option>
+            </select>
+            <label for="background-upload">Unggah Background:</label>
+            <input type="file" id="background-upload" name="background-upload" accept="image/*" onchange="uploadImage()">
+            <button type="submit">Simpan Pengaturan</button>
+        </form>
+    </div>
+    <script>
+        async function updateBackground() {
+            const selectedImage = document.getElementById('background-select').value;
+            if (selectedImage) {
+                document.body.style.backgroundImage = `url('/images/${selectedImage}')`;
+            }
+        }
+
+        async function uploadImage() {
+            const formData = new FormData();
+            formData.append('background', document.getElementById('background-upload').files[0]);
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                document.body.style.backgroundImage = `url('${result.filePath}')`;
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+    </script>
+</body>
+</html>
