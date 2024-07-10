@@ -1,7 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
-const { connectToTikTok } = require('./tiktok-api');
+const { connectToTikTok, getInteractions } = require('./tiktok-api');
 
 const app = express();
 app.use(express.json());
@@ -58,6 +58,20 @@ app.post('/api/set-background', async (req, res) => {
         res.json({ success: true });
     } else {
         res.status(400).json({ success: false });
+    }
+});
+
+// API untuk mendapatkan data interaksi
+app.get('/api/get-interactions', async (req, res) => {
+    try {
+        const interactions = await getInteractions();
+        res.json({
+            success: true,
+            photos: interactions
+        });
+    } catch (error) {
+        console.error('Error getting interactions:', error);
+        res.status(500).json({ success: false });
     }
 });
 
