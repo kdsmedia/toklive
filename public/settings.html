@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pengaturan</title>
-    
+    <link rel="stylesheet" href="styles.css">
 
     <style>
         /* CSS untuk Halaman Pengaturan */
@@ -21,9 +21,12 @@
         h1 {
             text-align: center;
         }
-        .container {
+        .settings-container {
             max-width: 600px;
             margin: 0 auto;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 20px;
+            border-radius: 8px;
         }
         label {
             display: block;
@@ -36,6 +39,7 @@
             border: 1px solid #0f0;
             background-color: #333;
             color: #0f0;
+            border-radius: 5px;
         }
         button {
             background-color: #0f0;
@@ -43,6 +47,7 @@
             border: none;
             padding: 10px;
             cursor: pointer;
+            border-radius: 5px;
         }
         button:hover {
             background-color: #0b0;
@@ -59,6 +64,10 @@
         .navigation a:hover {
             text-decoration: underline;
         }
+        #response-message {
+            text-align: center;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -74,8 +83,15 @@
             <label for="default-background">Pilih Background Default:</label>
             <select id="default-background" name="default-background">
                 <option value="">Pilih Background</option>
-                <option value="background1.jpg">Background 1</option>
-                <option value="background2.jpg">Background 2</option>
+                <option value="default.jpg">Default</option>
+                <option value="1.jpg">Background 1</option>
+                <option value="2.jpg">Background 2</option>
+                <option value="3.jpg">Background 3</option>
+                <option value="4.jpg">Background 4</option>
+                <option value="5.jpg">Background 5</option>
+                <option value="6.jpg">Background 6</option>
+                <option value="7.jpg">Background 7</option>
+                <option value="8.jpg">Background 8</option>
                 <!-- Tambahkan lebih banyak opsi background sesuai kebutuhan -->
             </select>
             
@@ -87,6 +103,31 @@
         </div>
     </div>
     <script>
+        // Ambil daftar background dari server
+        async function loadBackgrounds() {
+            try {
+                const response = await fetch('/api/backgrounds');
+                const data = await response.json();
+                if (data.success) {
+                    const select = document.getElementById('default-background');
+                    data.backgrounds.forEach(background => {
+                        const option = document.createElement('option');
+                        option.value = background;
+                        option.textContent = background;
+                        select.appendChild(option);
+                    });
+                } else {
+                    throw new Error(data.message);
+                }
+            } catch (error) {
+                console.error('Error fetching backgrounds:', error);
+                document.getElementById('response-message').textContent = 'Gagal mengambil daftar background.';
+            }
+        }
+
+        // Panggil fungsi untuk mengisi background default saat halaman dimuat
+        loadBackgrounds();
+
         document.getElementById('settings-form').addEventListener('submit', async (event) => {
             event.preventDefault();
             
@@ -108,37 +149,15 @@
                     method: 'POST',
                     body: formData
                 });
-
-                const result = await response.json();
-                if (result.success) {
-                    document.getElementById('response-message').textContent = 'Berhasil terhubung dengan TikTok!';
-                    setTimeout(() => {
-                        window.location.href = '/'; // Alihkan ke halaman index setelah berhasil
-                    }, 2000);
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('response-message').textContent = data.message;
                 } else {
-                    document.getElementById('response-message').textContent = 'Gagal menghubungkan ke TikTok.';
+                    throw new Error(data.message);
                 }
             } catch (error) {
-                console.error('Error connecting to TikTok:', error);
-                document.getElementById('response-message').textContent = 'Gagal menghubungkan ke TikTok.';
-            }
-        });
-
-        document.getElementById('default-background').addEventListener('change', async (event) => {
-            const selectedBackground = event.target.value;
-            if (selectedBackground) {
-                try {
-                    await fetch('/api/set-background', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ backgroundUrl: `/images/${selectedBackground}` })
-                    });
-                    document.body.style.backgroundImage = `url('/images/${selectedBackground}')`;
-                } catch (error) {
-                    document.getElementById('response-message').textContent = 'Gagal mengatur background.';
-                }
+                console.error('Error submitting form:', error);
+                document.getElementById('response-message').textContent = 'Terjadi kesalahan.';
             }
         });
     </script>
